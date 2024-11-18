@@ -45,7 +45,7 @@ def rand_sections(x, n, l):
     tup = ((n,), x.shape[1:-1], (l,))
     sz = sum(tup, ())
 
-    res = np.zeros(sz)
+    res = np.zeros(sz, dtype = x.dtype)
     evtinds = np.zeros(n, dtype=int)
     j = 0
 
