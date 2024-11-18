@@ -373,6 +373,15 @@ class EventBuilder(object):
         return filts
 
 
+    def _calc_angle(trace, center_coordinates):
+        """
+        Method that calculates angle of complex coordinates, relative to a center point
+        """
+        angle_trace = np.angle(trace - center_coordinates)
+
+        return angle_trace
+
+    
     @staticmethod
     def _smart_trigger(trace, threshold_on, threshold_off,
                        mergewindow):
@@ -424,7 +433,7 @@ class EventBuilder(object):
         return ind_array
 
 
-    def acquire_pulses(self, template, psd, threshold_on, tchan, threshold_off=None, mergewindow=None):
+    def acquire_pulses(self, template, psd, threshold_on, tchan, threshold_off=None, mergewindow=None, calculate_angle=False, center=0):
         """
         Method to carry out the offline triggering algorithm based on
         the OF formalism in time domain. Only trigeers on one specified
@@ -513,8 +522,12 @@ class EventBuilder(object):
             parentsn = metadata['parentseriesnumber'][0]
             parenten = metadata['parenteventnumber'][0]
             epochtime_start = metadata['eventtime'][0]
+
+            if(calculate_angle):
+                filtered = self._filter_traces(self._calc_angle(data, center))
             
-            filtered = self._filter_traces(data)
+            else:
+                filtered = self._filter_traces(data)
 
             for kk, filt in enumerate(filtered):
 
