@@ -372,15 +372,6 @@ class EventBuilder(object):
 
         return filts
 
-
-    def _calc_angle(trace, center_coordinates):
-        """
-        Method that calculates angle of complex coordinates, relative to a center point
-        """
-        angle_trace = np.angle(trace - center_coordinates)
-
-        return angle_trace
-
     
     @staticmethod
     def _smart_trigger(trace, threshold_on, threshold_off,
@@ -524,7 +515,7 @@ class EventBuilder(object):
             epochtime_start = metadata['eventtime'][0]
 
             if(calculate_angle):
-                filtered = self._filter_traces(self._calc_angle(data, center))
+                filtered = self._filter_traces(np.angle(data - center))
             
             else:
                 filtered = self._filter_traces(data)
