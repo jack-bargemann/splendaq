@@ -45,7 +45,7 @@ def rand_sections(x, n, l):
     tup = ((n,), x.shape[1:-1], (l,))
     sz = sum(tup, ())
 
-    res = np.zeros(sz)
+    res = np.zeros(sz, dtype = x.dtype)
     evtinds = np.zeros(n, dtype=int)
     j = 0
 
@@ -87,7 +87,7 @@ class EventBuilder(object):
     """
 
     def __init__(self, contdatadir, savepath, tracelength,
-                 maxevtsperdump=500):
+                 maxevtsperdump=500, complex_angle=False, center_point=0):
         """
         Initialization of the EventBuilder class.
 
@@ -102,12 +102,18 @@ class EventBuilder(object):
             The length of each event built in units of bins.
         maxevtsperdump : int, optional
             The maximum number of events to save to each file created.
+        complex_angle : bool, optional
+            calculates angle in complex plane relative to center_point, used when data is complex-valued
+        center_point : complex, optional
+            point in complex plane used to calculate angle, defaults to 0
 
         """
 
         self._contdatadir = contdatadir
         self._tracelength = tracelength
         self._maxevtsperdump = maxevtsperdump
+        self._complex_angle = complex_angle
+        self._center_point = center_point
         self._savepath = f"{os.path.abspath(savepath)}{os.sep}"
 
         self._start = datetime.now()
@@ -372,7 +378,7 @@ class EventBuilder(object):
 
         return filts
 
-
+    
     @staticmethod
     def _smart_trigger(trace, threshold_on, threshold_off,
                        mergewindow):
@@ -513,8 +519,12 @@ class EventBuilder(object):
             parentsn = metadata['parentseriesnumber'][0]
             parenten = metadata['parenteventnumber'][0]
             epochtime_start = metadata['eventtime'][0]
+
+            if(self._complex_angle):
+                filtered = self._filter_traces(np.angle(data - self._center_point))
             
-            filtered = self._filter_traces(data)
+            else:
+                filtered = self._filter_traces(data)
 
             for kk, filt in enumerate(filtered):
 
