@@ -141,7 +141,7 @@ class Writer(object):
 
         self.filename = filename
 
-    def write_data(self, data, filename=None, **metadata, write_mode='w'):
+    def write_data(self, data, filename=None, write_mode='w', **metadata):
         """
         Method to save the data to the specified HDF5 file.
 
