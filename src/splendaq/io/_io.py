@@ -141,7 +141,7 @@ class Writer(object):
 
         self.filename = filename
 
-    def write_data(self, data, filename=None, **metadata):
+    def write_data(self, data, filename=None, write_mode='w', **metadata):
         """
         Method to save the data to the specified HDF5 file.
 
@@ -155,6 +155,9 @@ class Writer(object):
         metadata : kwargs
             All of the corresponding metadata for the events in the
             HDF5 file.
+        write_mode : 'w', 'a'
+            Using write mode 'a' allows user to add data to file without overwriting.
+            For example: using the splendaq writer to add metadata to an existing file
 
         """
 
@@ -165,13 +168,14 @@ class Writer(object):
         elif self.filename is None:
             raise ValueError("No filename specified.")
 
-        with h5py.File(self.filename, mode='w') as hf:
-            hf.create_dataset(
-                'data',
-                data=data,
-                compression='gzip',
-                track_order=True,
-            )
+        with h5py.File(self.filename, mode=write_mode) as hf:
+            if data is not None:
+                hf.create_dataset(
+                    'data',
+                    data=data,
+                    compression='gzip',
+                    track_order=True,
+                )
             for key in metadata:
                 size_of_key = sys.getsizeof(copy.deepcopy(metadata[key]))
                 if current_metadata_size + size_of_key < 64000:
