@@ -169,12 +169,13 @@ class Writer(object):
             raise ValueError("No filename specified.")
 
         with h5py.File(self.filename, mode=write_mode) as hf:
-            hf.create_dataset(
-                'data',
-                data=data,
-                compression='gzip',
-                track_order=True,
-            )
+            if data is not None:
+                hf.create_dataset(
+                    'data',
+                    data=data,
+                    compression='gzip',
+                    track_order=True,
+                )
             for key in metadata:
                 size_of_key = sys.getsizeof(copy.deepcopy(metadata[key]))
                 if current_metadata_size + size_of_key < 64000:
