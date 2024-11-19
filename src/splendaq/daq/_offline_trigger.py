@@ -87,7 +87,7 @@ class EventBuilder(object):
     """
 
     def __init__(self, contdatadir, savepath, tracelength,
-                 maxevtsperdump=500):
+                 maxevtsperdump=500, complex_angle=False, center_point=0):
         """
         Initialization of the EventBuilder class.
 
@@ -102,12 +102,18 @@ class EventBuilder(object):
             The length of each event built in units of bins.
         maxevtsperdump : int, optional
             The maximum number of events to save to each file created.
+        complex_angle : bool, optional
+            calculates angle in complex plane relative to center_point, used when data is complex-valued
+        center_point : complex, optional
+            point in complex plane used to calculate angle, defaults to 0
 
         """
 
         self._contdatadir = contdatadir
         self._tracelength = tracelength
         self._maxevtsperdump = maxevtsperdump
+        self._complex_angle = complex_angle
+        self._center_point = center_point
         self._savepath = f"{os.path.abspath(savepath)}{os.sep}"
 
         self._start = datetime.now()
@@ -424,7 +430,7 @@ class EventBuilder(object):
         return ind_array
 
 
-    def acquire_pulses(self, template, psd, threshold_on, tchan, threshold_off=None, mergewindow=None, calculate_angle=False, center=0):
+    def acquire_pulses(self, template, psd, threshold_on, tchan, threshold_off=None, mergewindow=None):
         """
         Method to carry out the offline triggering algorithm based on
         the OF formalism in time domain. Only trigeers on one specified
@@ -514,8 +520,8 @@ class EventBuilder(object):
             parenten = metadata['parenteventnumber'][0]
             epochtime_start = metadata['eventtime'][0]
 
-            if(calculate_angle):
-                filtered = self._filter_traces(np.angle(data - center))
+            if(self._complex_angle):
+                filtered = self._filter_traces(np.angle(data - self._center_point))
             
             else:
                 filtered = self._filter_traces(data)
