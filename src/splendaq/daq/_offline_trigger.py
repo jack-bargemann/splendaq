@@ -515,128 +515,130 @@ class EventBuilder(object):
         for filename in filelist:
 
             FR = Reader(filename)
-            data, metadata = FR.get_data(include_metadata=True)
-            parentsn = metadata['parentseriesnumber'][0]
-            parenten = metadata['parenteventnumber'][0]
-            epochtime_start = metadata['eventtime'][0]
+            for index in range(0, FR.num_dsets(filename)):
+                
+                data, metadata = FR.get_data(include_metadata=True, dset_index=index)
+                parentsn = metadata['parentseriesnumber'][0]
+                parenten = metadata['parenteventnumber'][0]
+                epochtime_start = metadata['eventtime'][0]
 
-            if(self._complex_angle):
-                filtered = self._filter_traces(np.angle(data - self._center_point))
+                if(self._complex_angle):
+                    filtered = self._filter_traces(np.angle(data - self._center_point))
             
-            else:
-                filtered = self._filter_traces(data)
+                else:
+                    filtered = self._filter_traces(data)
+    
+                for kk, filt in enumerate(filtered):
 
-            for kk, filt in enumerate(filtered):
-
-                ranges = EventBuilder._smart_trigger(
-                    sign * filt,
-                    sign * self._threshold_on,
-                    sign * self._threshold_off,
-                    mergewindow,
-                )
-
-                if len(ranges)==0:
-                    break
-
-                for ind0, ind1 in zip(ranges[:, 0], ranges[:, 1]):
-                    indmax = ind0 + np.argmax(sign * filt[ind0:ind1])
-                    evtinds_list.append([indmax - self._tracelength//2])
-                    triginds_list.append([indmax])
-                    evtamps_list.append([filt[indmax]])
-                    trace_save_start = indmax - self._tracelength//2
-                    trace_save_end = indmax + self._tracelength//2
-                    traces_list.append(
-                        data[[kk], :, trace_save_start:trace_save_end]
+                    ranges = EventBuilder._smart_trigger(
+                        sign * filt,
+                        sign * self._threshold_on,
+                        sign * self._threshold_off,
+                        mergewindow,
                     )
 
-                evt_counter += len(ranges)
-
-                parentsn_list.append(parentsn * np.ones(len(ranges)))
-                parenten_list.append(parenten * np.ones(len(ranges)))
-                epochtime_list.append(epochtime_start * np.ones(len(ranges)))
-
-                if evt_counter >= self._maxevtsperdump:
-
-                    evtinds = np.concatenate(evtinds_list)
-                    triginds = np.concatenate(triginds_list)
-                    evtamps = np.concatenate(evtamps_list)
-                    traces = np.concatenate(traces_list)
-                    parentsns = np.concatenate(parentsn_list)
-                    parentens = np.concatenate(parenten_list)
-                    epochtimes = np.concatenate(epochtime_list)
-
-                    del evtinds_list
-                    del triginds_list
-                    del evtamps_list
-                    del traces_list
-                    del parentsn_list
-                    del parenten_list
-                    del epochtime_list
-
-                    for ii in range(len(evtinds) // self._maxevtsperdump):
-
-                        nevents = len(evtinds[:self._maxevtsperdump])
-                        FW = Writer(
-                            f"{self._savepath}{savename}_F{dumpnum:04d}.h5",
+                    if len(ranges)==0:
+                        break
+    
+                    for ind0, ind1 in zip(ranges[:, 0], ranges[:, 1]):
+                        indmax = ind0 + np.argmax(sign * filt[ind0:ind1])
+                        evtinds_list.append([indmax - self._tracelength//2])
+                        triginds_list.append([indmax])
+                        evtamps_list.append([filt[indmax]])
+                        trace_save_start = indmax - self._tracelength//2
+                        trace_save_end = indmax + self._tracelength//2
+                        traces_list.append(
+                            data[[kk], :, trace_save_start:trace_save_end]
                         )
-                        FW.write_data(
-                            data=traces[:self._maxevtsperdump],
-                            eventindex=evtinds[:self._maxevtsperdump],
-                            eventnumber=np.arange(nevents) + basenevents,
-                            eventtime=(
-                                epochtimes[:self._maxevtsperdump]
-                            ) + (
-                                evtinds[:self._maxevtsperdump] / self._fs
-                            ),
-                            seriesnumber=[seriesnumber] * nevents,
-                            dumpnumber=[dumpnum] * nevents,
-                            triggertime=(
-                                epochtimes[:self._maxevtsperdump]
-                            ) + (
-                                triginds[:self._maxevtsperdump] / self._fs
-                            ),
-                            triggertype=np.ones(nevents, dtype=int),
-                            triggeramp=evtamps[:self._maxevtsperdump],
-                            parentseriesnumber=parentsns[:self._maxevtsperdump],
-                            parenteventnumber=parentens[:self._maxevtsperdump],
-                            datashape=traces[:self._maxevtsperdump].shape,
-                            fs=self._fs,
-                            channels=metadata['channels'],
-                            comment=f"""trigger:
-                            turn-on threshold: {self._nthreshold_on}sigma,
-                            turn-off threshold: {self._nthreshold_off}sigma""",
-                            template=self._template,
-                            psd=self._psd,
-                        )
-                        dumpnum += 1
-                        basenevents += nevents
 
-                        evtinds = evtinds[self._maxevtsperdump:]
-                        triginds = triginds[self._maxevtsperdump:]
-                        evtamps = evtamps[self._maxevtsperdump:]
-                        traces = traces[self._maxevtsperdump:]
-                        parentsns = parentsns[self._maxevtsperdump:]
-                        parentens = parentens[self._maxevtsperdump:]
-                        epochtimes = epochtimes[self._maxevtsperdump:]
+                    evt_counter += len(ranges)
+    
+                    parentsn_list.append(parentsn * np.ones(len(ranges)))
+                    parenten_list.append(parenten * np.ones(len(ranges)))
+                    epochtime_list.append(epochtime_start * np.ones(len(ranges)))
 
-                    if len(evtinds) > 0:
-                        evtinds_list = [evtinds]
-                        triginds_list = [triginds]
-                        evtamps_list = [evtamps]
-                        traces_list = [traces]
-                        parentsn_list = [parentsns]
-                        parenten_list = [parentens]
-                        epochtime_list = [epochtimes]
-                        evt_counter = len(evtinds)
-                    else:
-                        evtinds_list = []
-                        triginds_list = []
-                        evtamps_list = []
-                        traces_list = []
-                        parentsn_list = []
-                        parenten_list = []
-                        epochtime_list = []
-                        evt_counter = 0
+                    if evt_counter >= self._maxevtsperdump:
+
+                        evtinds = np.concatenate(evtinds_list)
+                        triginds = np.concatenate(triginds_list)
+                        evtamps = np.concatenate(evtamps_list)
+                        traces = np.concatenate(traces_list)
+                        parentsns = np.concatenate(parentsn_list)
+                        parentens = np.concatenate(parenten_list)
+                        epochtimes = np.concatenate(epochtime_list)
+
+                        del evtinds_list
+                        del triginds_list
+                        del evtamps_list
+                        del traces_list
+                        del parentsn_list
+                        del parenten_list
+                        del epochtime_list
+    
+                        for ii in range(len(evtinds) // self._maxevtsperdump):
+
+                            nevents = len(evtinds[:self._maxevtsperdump])
+                            FW = Writer(
+                                f"{self._savepath}{savename}_F{dumpnum:04d}.h5",
+                            )
+                            FW.write_data(
+                                data=traces[:self._maxevtsperdump],
+                                eventindex=evtinds[:self._maxevtsperdump],
+                                eventnumber=np.arange(nevents) + basenevents,
+                                eventtime=(
+                                    epochtimes[:self._maxevtsperdump]
+                                ) + (
+                                    evtinds[:self._maxevtsperdump] / self._fs
+                                ),
+                                seriesnumber=[seriesnumber] * nevents,
+                                dumpnumber=[dumpnum] * nevents,
+                                triggertime=(
+                                    epochtimes[:self._maxevtsperdump]
+                                ) + (
+                                    triginds[:self._maxevtsperdump] / self._fs
+                                ),
+                                triggertype=np.ones(nevents, dtype=int),
+                                triggeramp=evtamps[:self._maxevtsperdump],
+                                parentseriesnumber=parentsns[:self._maxevtsperdump],
+                                parenteventnumber=parentens[:self._maxevtsperdump],
+                                datashape=traces[:self._maxevtsperdump].shape,
+                                fs=self._fs,
+                                channels=metadata['channels'],
+                                comment=f"""trigger:
+                                turn-on threshold: {self._nthreshold_on}sigma,
+                                turn-off threshold: {self._nthreshold_off}sigma""",
+                                template=self._template,
+                                psd=self._psd,
+                            )
+                            dumpnum += 1
+                            basenevents += nevents
+    
+                            evtinds = evtinds[self._maxevtsperdump:]
+                            triginds = triginds[self._maxevtsperdump:]
+                            evtamps = evtamps[self._maxevtsperdump:]
+                            traces = traces[self._maxevtsperdump:]
+                            parentsns = parentsns[self._maxevtsperdump:]
+                            parentens = parentens[self._maxevtsperdump:]
+                            epochtimes = epochtimes[self._maxevtsperdump:]
+    
+                        if len(evtinds) > 0:
+                            evtinds_list = [evtinds]
+                            triginds_list = [triginds]
+                            evtamps_list = [evtamps]
+                            traces_list = [traces]
+                            parentsn_list = [parentsns]
+                            parenten_list = [parentens]
+                            epochtime_list = [epochtimes]
+                            evt_counter = len(evtinds)
+                        else:
+                            evtinds_list = []
+                            triginds_list = []
+                            evtamps_list = []
+                            traces_list = []
+                            parentsn_list = []
+                            parenten_list = []
+                            epochtime_list = []
+                            evt_counter = 0
 
         # clean up the remaining events
         if evt_counter > 0:
