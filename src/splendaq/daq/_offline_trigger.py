@@ -203,7 +203,7 @@ class EventBuilder(object):
             FR = Reader(filelist[key])
             for index in range(0, FR.num_dsets(filename)):
                             
-                data, metadata = FR.get_data(include_metadata=True, index)
+                data, metadata = FR.get_data(include_metadata=True, dset_index=index)
                 parentsn = metadata['parentseriesnumber'][0]
                 parenten = metadata['parenteventnumber'][0]
                 epochtime_start = metadata['eventtime'][0]
