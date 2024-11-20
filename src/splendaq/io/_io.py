@@ -63,7 +63,7 @@ class Reader(object):
             if include_data:
                 if isinstance(hf['data'], h5py.Dataset):
                     data = np.asarray(hf['data'])
-                elif isinstance(f['data'], h5py.Group):
+                elif isinstance(hf['data'], h5py.Group):
                     if dset_name == None:
                         dset_name = list(hf["data"].keys())[0]
                     data = np.asarray(hf['data'][dset_name])
