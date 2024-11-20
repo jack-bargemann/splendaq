@@ -67,7 +67,7 @@ class Reader(object):
                     if dset_name == None:
                         dset_name = list(hf["data"].keys())[0]
                     data = np.asarray(hf['data'][dset_name])
-                else
+                else:
                     raise ValueError("no datafile or group named 'data' in file")
 
         if include_data and include_metadata:
