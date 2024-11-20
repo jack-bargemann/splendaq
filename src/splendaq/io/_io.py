@@ -80,7 +80,7 @@ class Reader(object):
                     data = np.asarray(hf['data'])
                 elif isinstance(hf['data'], h5py.Group):
                     if dset_name == None:
-                        if dset_index < num_dsets(filename):
+                        if dset_index < self.num_dsets(filename):
                             dset_name = list(hf["data"].keys())[dset_index]
                         else:
                             raise ValueError("dset index out of range")
