@@ -66,7 +66,7 @@ class Reader(object):
                 elif isinstance(f['data'], h5py.Group):
                     if dset_name == None:
                         dset_name = list(hf["data"].keys())[0]
-                    data = np.asarray(hf['data'][dset_name]
+                    data = np.asarray(hf['data'][dset_name])
                 else
                     raise ValueError("no datafile or group named 'data' in file")
 
