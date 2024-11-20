@@ -43,7 +43,7 @@ class Reader(object):
 
         self.filename = filename
 
-    def _open_file(self, include_data, include_metadata, filename=None):
+    def _open_file(self, include_data, include_metadata, filename=None, dset_name=None):
         """
         Hidden method to handle opening data under different settings.
 
@@ -61,7 +61,14 @@ class Reader(object):
                     if key != 'data':
                         out_dict[key] = np.asarray(hf[key])
             if include_data:
-                data = np.asarray(hf['data'])
+                if isinstance(hf['data'], h5py.Dataset):
+                    data = np.asarray(hf['data'])
+                elif isinstance(f['data'], h5py.Group):
+                    if dset_name == None:
+                        dset_name = list(hf["data"].keys())[0]
+                    data = np.asarray(hf['data'][dset_name]
+                else
+                    raise ValueError("no datafile or group named 'data' in file")
 
         if include_data and include_metadata:
             return data, out_dict
@@ -71,7 +78,7 @@ class Reader(object):
             return out_dict
 
 
-    def get_data(self, filename=None, include_metadata=False):
+    def get_data(self, filename=None, include_metadata=False, dset_name=None):
         """
         Method to load the data from the specified HDF5 file.
 
@@ -94,7 +101,7 @@ class Reader(object):
 
         """
 
-        return self._open_file(True, include_metadata, filename=filename)
+        return self._open_file(True, include_metadata, filename=filename, dset_name=dset_name)
 
     def get_metadata(self, filename=None):
         """
