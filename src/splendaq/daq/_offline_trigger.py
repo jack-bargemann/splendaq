@@ -157,8 +157,9 @@ class EventBuilder(object):
         datashapes = []
         for filename in filelist:
             FR = Reader(filename)
-            metadata = FR.get_metadata()
-            datashapes.append(metadata['datashape'])
+            for index in range(0, FR.num_dsets(filename)):
+                metadata = FR.get_metadata()
+                datashapes.append(metadata['datashape'])
         datashapes_arr = np.vstack(datashapes)
 
         nmax_rows = datashapes_arr[..., -1] // self._tracelength
@@ -200,86 +201,88 @@ class EventBuilder(object):
         for key in sorted(counts.keys()):
 
             FR = Reader(filelist[key])
-            data, metadata = FR.get_data(include_metadata=True)
-            parentsn = metadata['parentseriesnumber'][0]
-            parenten = metadata['parenteventnumber'][0]
-            epochtime_start = metadata['eventtime'][0]
+            for index in range(0, FR.num_dsets(filename)):
+                            
+                data, metadata = FR.get_data(include_metadata=True, index)
+                parentsn = metadata['parentseriesnumber'][0]
+                parenten = metadata['parenteventnumber'][0]
+                epochtime_start = metadata['eventtime'][0]
 
-            ei, tr = rand_sections(data, counts[key], self._tracelength)
+                ei, tr = rand_sections(data, counts[key], self._tracelength)
 
-            evt_counter += len(ei)
+                evt_counter += len(ei)
 
-            evtinds_list.append(ei)
-            traces_list.append(tr)
-            parentsn_list.append(parentsn * np.ones(len(ei)))
-            parenten_list.append(parenten * np.ones(len(ei)))
-            epochtime_list.append(epochtime_start * np.ones(len(ei)))
+                evtinds_list.append(ei)
+                traces_list.append(tr)
+                parentsn_list.append(parentsn * np.ones(len(ei)))
+                parenten_list.append(parenten * np.ones(len(ei)))
+                epochtime_list.append(epochtime_start * np.ones(len(ei)))
 
-            if evt_counter >= self._maxevtsperdump:
+                if evt_counter >= self._maxevtsperdump:
 
-                evtinds = np.concatenate(evtinds_list)
-                traces = np.vstack(traces_list)
-                parentsns = np.concatenate(parentsn_list)
-                parentens = np.concatenate(parenten_list)
-                epochtimes = np.concatenate(epochtime_list)
+                    evtinds = np.concatenate(evtinds_list)
+                    traces = np.vstack(traces_list)
+                    parentsns = np.concatenate(parentsn_list)
+                    parentens = np.concatenate(parenten_list)
+                    epochtimes = np.concatenate(epochtime_list)
 
-                del evtinds_list
-                del traces_list
-                del parentsn_list
-                del parenten_list
-                del epochtime_list
+                    del evtinds_list
+                    del traces_list
+                    del parentsn_list
+                    del parenten_list
+                    del epochtime_list
 
-                for ii in range(len(evtinds) // self._maxevtsperdump):
+                    for ii in range(len(evtinds) // self._maxevtsperdump):
 
-                    nevents = len(evtinds[:self._maxevtsperdump])
-                    FW = Writer(
-                        f"{self._savepath}{savename}_F{dumpnum:04d}.h5",
-                    )
-                    FW.write_data(
-                        data=traces[:self._maxevtsperdump],
-                        eventindex=evtinds[:self._maxevtsperdump],
-                        eventnumber=np.arange(nevents) + basenevents,
-                        eventtime=(
-                            epochtimes[:self._maxevtsperdump]
-                        ) + (
-                            evtinds[:self._maxevtsperdump] / self._fs
-                        ),
-                        seriesnumber=[seriesnumber] * nevents,
-                        dumpnumber=[dumpnum] * nevents,
-                        triggertime=np.zeros(nevents),
-                        triggertype=np.zeros(nevents, dtype=int),
-                        triggeramp=np.zeros(nevents),
-                        parentseriesnumber=parentsns[:self._maxevtsperdump],
-                        parenteventnumber=parentens[:self._maxevtsperdump],
-                        datashape=traces[:self._maxevtsperdump].shape,
-                        fs=self._fs,
-                        channels=metadata['channels'],
-                        comment='randoms',
-                    )
-                    dumpnum += 1
-                    basenevents += nevents
+                        nevents = len(evtinds[:self._maxevtsperdump])
+                        FW = Writer(
+                            f"{self._savepath}{savename}_F{dumpnum:04d}.h5",
+                        )
+                        FW.write_data(
+                            data=traces[:self._maxevtsperdump],
+                            eventindex=evtinds[:self._maxevtsperdump],
+                            eventnumber=np.arange(nevents) + basenevents,
+                            eventtime=(
+                                epochtimes[:self._maxevtsperdump]
+                            ) + (
+                                evtinds[:self._maxevtsperdump] / self._fs
+                            ),
+                            seriesnumber=[seriesnumber] * nevents,
+                            dumpnumber=[dumpnum] * nevents,
+                            triggertime=np.zeros(nevents),
+                            triggertype=np.zeros(nevents, dtype=int),
+                            triggeramp=np.zeros(nevents),
+                            parentseriesnumber=parentsns[:self._maxevtsperdump],
+                            parenteventnumber=parentens[:self._maxevtsperdump],
+                            datashape=traces[:self._maxevtsperdump].shape,
+                            fs=self._fs,
+                            channels=metadata['channels'],
+                            comment='randoms',
+                        )
+                        dumpnum += 1
+                        basenevents += nevents
 
-                    evtinds = evtinds[self._maxevtsperdump:]
-                    traces = traces[self._maxevtsperdump:]
-                    parentsns = parentsns[self._maxevtsperdump:]
-                    parentens = parentens[self._maxevtsperdump:]
-                    epochtimes = epochtimes[self._maxevtsperdump:]
-
-                if len(evtinds) > 0:
-                    evtinds_list = [evtinds]
-                    traces_list = [traces]
-                    parentsn_list = [parentsns]
-                    parenten_list = [parentens]
-                    epochtime_list = [epochtimes]
-                    evt_counter = len(evtinds)
-                else:
-                    evtinds_list = []
-                    traces_list = []
-                    parentsn_list = []
-                    parenten_list = []
-                    epochtime_list = []
-                    evt_counter = 0
-
+                        evtinds = evtinds[self._maxevtsperdump:]
+                        traces = traces[self._maxevtsperdump:]
+                        parentsns = parentsns[self._maxevtsperdump:]
+                        parentens = parentens[self._maxevtsperdump:]
+                        epochtimes = epochtimes[self._maxevtsperdump:]
+    
+                    if len(evtinds) > 0:
+                        evtinds_list = [evtinds]
+                        traces_list = [traces]
+                        parentsn_list = [parentsns]
+                        parenten_list = [parentens]
+                        epochtime_list = [epochtimes]
+                        evt_counter = len(evtinds)
+                    else:
+                        evtinds_list = []
+                        traces_list = []
+                        parentsn_list = []
+                        parenten_list = []
+                        epochtime_list = []
+                        evt_counter = 0
+    
         # clean up the remaining events
         if evt_counter > 0:
 
