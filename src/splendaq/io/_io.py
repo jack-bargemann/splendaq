@@ -83,7 +83,7 @@ class Reader(object):
                         if dset_index < self.num_dsets(filename):
                             dset_name = list(hf["data"].keys())[dset_index]
                         else:
-                            raise ValueError("dset index out of range")
+                            raise ValueError("dset index out of range, only ", self.num_dsets(filename), " datasets in file)
                     data = np.asarray(hf['data'][dset_name])
                 else:
                     raise ValueError("no datafile or group named 'data' in file")
