@@ -43,7 +43,22 @@ class Reader(object):
 
         self.filename = filename
 
-    def _open_file(self, include_data, include_metadata, filename=None, dset_name=None):
+    def num_dsets(self, filename):
+        """
+        Method that returns number of datasets.
+        If a single dataset named 'data' exists in the root directory, returns one
+        Else, if a group named 'data' exists, returns number of keys in that group
+        """
+        with h5py.File(self.filename, mode='r') as hf:
+            for key in hf:
+                if key == 'data':
+                    if isinstance(hf['data'], h5py.Dataset):
+                        return 1
+                    elif isinstance(hf['data'], h5py.Group):
+                        return len(list(hf['data'].keys()))
+            raise ValueError("no datafile or group named 'data' in file")
+
+    def _open_file(self, include_data, include_metadata, filename=None, dset_name=None, dset_index=0):
         """
         Hidden method to handle opening data under different settings.
 
@@ -65,7 +80,10 @@ class Reader(object):
                     data = np.asarray(hf['data'])
                 elif isinstance(hf['data'], h5py.Group):
                     if dset_name == None:
-                        dset_name = list(hf["data"].keys())[0]
+                        if dset_index < num_dsets(filename):
+                            dset_name = list(hf["data"].keys())[dset_index]
+                        else:
+                            raise ValueError("dset index out of range")
                     data = np.asarray(hf['data'][dset_name])
                 else:
                     raise ValueError("no datafile or group named 'data' in file")
@@ -78,7 +96,7 @@ class Reader(object):
             return out_dict
 
 
-    def get_data(self, filename=None, include_metadata=False, dset_name=None):
+    def get_data(self, filename=None, include_metadata=False, dset_name=None, dset_index=0):
         """
         Method to load the data from the specified HDF5 file.
 
@@ -90,6 +108,10 @@ class Reader(object):
         include_metadata : bool, optional
             If True, the metadata will also be returned alongside the
             data in the HDF5 file. Default is False.
+        dset_name : string, optional
+            Name of dset to open, if file contains multiple dsets
+        dset_index : int, optional
+            Index of dset to open, if file contains multiple dsets
 
         Returns
         -------
@@ -101,7 +123,7 @@ class Reader(object):
 
         """
 
-        return self._open_file(True, include_metadata, filename=filename, dset_name=dset_name)
+        return self._open_file(True, include_metadata, filename=filename, dset_name=dset_name, dset_index=dset_index)
 
     def get_metadata(self, filename=None):
         """
